@@ -79,6 +79,11 @@ assert.equal(usage.models[0].tier, 'flash', 'flash costs more here, so it sorts 
 assert.equal(usage.models.find((model) => model.tier === 'pro').cost.toFixed(2), '1.17');
 assert.equal(usage.models.length, 2);
 
+// Time mode prices each record by when it happened: the 23:30 call is off-peak.
+const timed = aggregateUsage(collected.records, resolveConfig({ tariff: 'time' }));
+assert.equal(timed.cost.toFixed(4), (1 + 0.04 + 1.17 + 8).toFixed(4), 'off-peak halves only the late call');
+assert.ok(timed.cost < usage.cost);
+
 // The same records collected twice would double count — that is the caller's job.
 const doubled = aggregateUsage([...collected.records, ...collected.records], config);
 assert.equal(doubled.calls, 4, 'aggregate also deduplicates by message id');

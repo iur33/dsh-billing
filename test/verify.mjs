@@ -116,4 +116,44 @@ assert.equal(resolveTier('DeepSeek-V4-Pro-0813', custom).tier, 'pro');
 assert.equal(custom.tiers.flash.cacheMiss, 2, 'untouched tiers keep the official peak price');
 assert.equal(resolveTier('mystery', custom).tier, null, 'null fallback stays unpriced');
 
-console.log('ok — peak-billing fold, pricing, checkpoint and override checks passed');
+// --- tariff: time (peak windows in Beijing time, holidays off-peak) ---------
+const timed = resolveConfig({ tariff: 'time', holidays: ['2026-10-01'] });
+const timedProjection = createProjection(timed);
+const at = (iso, id) => ({
+  type: 'assistant/message',
+  seq: 10,
+  time: Date.parse(iso),
+  data: {
+    turn: 1,
+    step: 1,
+    message: { id, role: 'assistant', content: [], source: { kind: 'model', provider: 'example', model: 'DeepSeek-V4.1-Flash-1017' } },
+    usage: { inputTokens: 1_000_000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 },
+  },
+});
+let timedState = timedProjection.init({}, 0);
+// Friday 10:00 Beijing = peak (¥2); Friday 22:00 = off-peak (¥1);
+// Saturday 10:00 = off-peak (¥1); Thursday 2026-10-01 10:00 = holiday (¥1).
+timedState = timedProjection.apply(timedState, at('2026-10-30T10:00:00+08:00', 't1'));
+timedState = timedProjection.apply(timedState, at('2026-10-30T22:00:00+08:00', 't2'));
+timedState = timedProjection.apply(timedState, at('2026-10-31T10:00:00+08:00', 't3'));
+timedState = timedProjection.apply(timedState, at('2026-10-01T10:00:00+08:00', 't4'));
+const timedView = timedProjection.wire.view(timedState);
+assert.equal(timedView.tariff, 'time');
+assert.equal(timedView.totalCost.toFixed(2), '5.00', 'one peak call plus three off-peak calls');
+assert.equal(timedView.peakSpend.toFixed(2), '2.00');
+assert.equal(timedView.offPeakSpend.toFixed(2), '3.00');
+assert.equal(timedView.offPeakCost, null, 'no hypothetical row in time mode');
+assert.equal(timedView.tokens.peak, 1_000_000);
+assert.equal(timedView.tokens.offPeak, 3_000_000);
+
+// Weekday 12:30 sits in the lunch gap and is off-peak.
+assert.equal(timedProjection.apply(timedProjection.init({}, 0), at('2026-10-30T12:30:00+08:00', 't5')).models[
+  Object.keys(timedProjection.apply(timedProjection.init({}, 0), at('2026-10-30T12:30:00+08:00', 't5')).models)[0]
+].offPeakCalls, 1);
+
+// Peak mode ignores the clock entirely.
+const peakProjection = createProjection(config);
+const peakState = peakProjection.apply(peakProjection.init({}, 0), at('2026-10-30T22:00:00+08:00', 't6'));
+assert.equal(peakProjection.wire.view(peakState).peakSpend.toFixed(2), '2.00');
+
+console.log('ok — peak-billing fold, pricing, checkpoint, tariff and override checks passed');

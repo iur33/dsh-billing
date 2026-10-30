@@ -212,7 +212,7 @@ assert.equal(day.calls, 1085);
 assert.equal(mount(registered.component, { useProjection: () => undefined, t }).tree, null);
 
 const view = {
-  currency: 'CNY', symbol: '¥', tariff: 'peak', calls: 202, totalCost: 4.5467,
+  currency: 'CNY', symbol: '¥', tariff: 'peak', calls: 202, totalCost: 4.5467, peakSpend: 4.5467, offPeakSpend: 0,
   offPeakCost: 2.27335, cacheSavings: 49.4, unpricedCalls: 0,
   tokens: { input: 1090855, cacheRead: 25309440, cacheWrite: 0, output: 169080, total: 26569375 },
   models: [
@@ -258,6 +258,22 @@ assert.ok(text(mounted.update()).includes('¥28.78'), 'month total');
 const allTab = find(mounted.update(), (node) => node.type === 'button' && node.children[0] === '总计');
 allTab.props.onClick();
 assert.ok(text(mounted.update()).includes('¥35.78'), 'all-time total');
+
+const timeView = {
+  ...view,
+  tariff: 'time',
+  offPeakCost: null,
+  totalCost: 3.2,
+  peakSpend: 2.1,
+  offPeakSpend: 1.1,
+  tokens: { ...view.tokens, peak: 1_000_000, offPeak: 2_000_000 },
+};
+const timeMount = mount(registered.component, { useProjection: () => timeView, t });
+find(timeMount.tree, (node) => node.type === 'button').props.onClick();
+const timePanel = text(find(timeMount.update(), (node) => node.props?.['data-peak-billing-panel'] === true));
+assert.ok(timePanel.includes('峰谷价'), 'time mode labels the badge');
+assert.ok(timePanel.includes('峰时 tokens') && timePanel.includes('谷时 tokens'), 'time mode splits tokens');
+assert.ok(!timePanel.includes('若按谷时价'), 'time mode drops the hypothetical row');
 
 const unpricedMount = mount(registered.component, {
   useProjection: () => ({ ...view, models: [{ ...view.models[0], tier: null, assumed: true, cost: 0 }] }),

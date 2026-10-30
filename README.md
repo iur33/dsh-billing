@@ -1,12 +1,34 @@
 # dsh-peak-billing
 
-> DeepSeek Harness 的计费插件：输入框下方实时显示本会话花了多少钱，**恒定按 DeepSeek 官网峰时价**折算；可选通过 SSH 把多台机器的用量汇总到一起。
+> DeepSeek Harness 的计费插件：输入框下方实时显示本会话花了多少钱，默认**全部按 DeepSeek 官网峰时价**折算，也可以切成**峰谷计费**；可选通过 SSH 把多台机器的用量汇总到一起。
 
 单机即装即用，多机汇总只是一个可选的配置项——不配 `fleet` 就完全不知道远端的存在。
 
-## 为什么恒定按峰时价
+## 计费模式：全部峰时 / 峰谷
 
-官方谷时价是峰时价的一半，但时段判断（工作日、法定节假日、时区）很容易出错。这个插件反其道而行：**任何时刻都按峰时价计**，得到的是「最坏情况账单」——不会低估，也不会因为判断错时段而给出一个偏低的数字。明细里仍会给一行「若按谷时价」作对比，但从不计入合计。
+配置项 `tariff` 决定价格怎么套：
+
+| `tariff` | 行为 | 适合谁 |
+| --- | --- | --- |
+| `peak`（默认） | **每次调用都按峰时价**，不看时钟 | 想要「最坏情况账单」、不想维护时段和节假日 |
+| `time` | 按调用发生的时间判断：北京时间周一至周五 **9:00–12:00、14:00–18:00** 为峰时，其余为谷时（谷时 = 峰时 × `offPeakRatio`，默认 0.5） | 想贴近真实账单 |
+
+默认是 `peak`：官方谷时价虽然只有一半，但时段判断（工作日、法定节假日、时区）很容易出错，按峰时算得到的是上限，不会低估成本。要更贴近实际就切到 `time`：
+
+```yaml
+config:
+  tariff: time
+  offPeakRatio: 0.5                      # 官方谷时价 = 峰时价的一半
+  holidays: ['2026-10-01', '2026-10-02'] # 中国法定节假日，见下
+```
+
+`time` 模式的三个注意点：
+
+- **节假日不内置**。官方定义排除了中国法定节假日，但节假日每年不同，插件不猜。没写进 `holidays` 的节假日会被当成普通工作日按峰时计——偏保守，不会少算。写进去的日期全天按谷时。
+- **固定按北京时间**（`Asia/Shanghai`）判断，与机器本身时区无关。
+- **多机汇总用同一套 `tariff`**：同步时会把模式和节假日传给 `bill.mjs`，远端只提供时间戳，价格统一在汇总机算。
+
+界面上两种模式的区别：`peak` 显示「峰时价」徽标和一行「若按谷时价」对比；`time` 显示「峰谷价」徽标，并多出「峰时 tokens / 谷时 tokens」两行。
 
 ## 功能
 
@@ -45,7 +67,7 @@
 前置：DSH 0.2.x（桌面端或 `dsh web` 都可以），Node 22.15+（宿主自带运行时即可，插件本身零依赖）。
 
 ```sh
-git clone https://github.com/OWNER/dsh-peak-billing.git
+git clone https://github.com/iur33/dsh-peak-billing.git
 cd dsh-peak-billing
 ./scripts/install.sh                 # 默认 desktop profile
 # DSH_PROFILE=web ./scripts/install.sh   # 或装进 web profile
@@ -81,7 +103,8 @@ EOF
   config:
     symbol: '¥'
     currency: 'CNY'
-    offPeakRatio: 0.5      # 仅用于「若按谷时价」对比
+    tariff: peak           # peak = 全部峰时；time = 按调用时段峰谷
+    offPeakRatio: 0.5      # 谷时价 = 峰时价 × 该系数
     defaultTier: flash     # 匹配不到时按哪档计；null 则标为「未匹配价格」
     tiers:
       flash: { label: DeepSeek-V4.1-Flash, cacheHit: 0.04, cacheMiss: 2, output: 8 }
@@ -104,7 +127,7 @@ EOF
 1. 汇总机跑 `scripts/bill.mjs`，扫本机 `$DSH_HOME/sessions` 下的会话日志；
 2. 通过 `ssh <host> "node -"` 把 `scripts/remote-usage.mjs` 喂给远端执行，远端只回传**用量记录**
    （时间、模型、四个 token 桶），不传价格、不落文件；
-3. 两边记录在汇总机上用同一张峰时价表折算、按天合并，写入 `$DSH_HOME/peak-billing/fleet.json`；
+3. 两边记录在汇总机上用同一张价格表（含 `tariff` 模式）折算、按天合并，写入 `$DSH_HOME/peak-billing/fleet.json`；
 4. 插件在 `127.0.0.1` 上提供 `GET /dsh-peak-billing/fleet` 和 `POST /dsh-peak-billing/sync`，
    面板打开时读取；快照超过 5 分钟会自动同步一次，也可以点「同步」强制刷新。
 
@@ -166,7 +189,7 @@ node test/render.mjs   # 浏览器 bundle 注册、四档切换、渲染
 ## 限制
 
 - 「全部机器」的日期以**汇总机时区**为准；跨时区机器会按汇总机日期归并。
-- 远端只读会话日志，不去查 provider 账单；算的是「按官网峰时价估算」。
+- 远端只读会话日志，不去查 provider 账单；算的是「按官网价格估算」（峰时或峰谷）。
 - 同步是**按需触发**（打开面板且快照超过 5 分钟，或点按钮），没有后台定时任务；
   需要定时可以在 cron / launchd / 计划任务里跑 `bill.mjs --write --push`。
 - 汇总接口只给本机浏览器用；如果从另一台机器远程打开汇总机的 GUI，多机那块会拉不到数据。
@@ -174,9 +197,10 @@ node test/render.mjs   # 浏览器 bundle 注册、四档切换、渲染
 ## English summary
 
 A DeepSeek Harness plugin that shows the running cost of the current session under the
-composer, **always priced at DeepSeek's official peak rates** (off-peak is exactly half, so
-peak is the worst-case bill). Per-session numbers come from a host-side session projection
-built on provider-reported usage — no estimation, no polling.
+composer. By default every call is priced at DeepSeek's official **peak** rates (off-peak is
+exactly half, so peak is the worst-case bill); set `tariff: time` to price each call by
+Beijing-time peak windows instead. Per-session numbers come from a host-side session
+projection built on provider-reported usage — no estimation, no polling.
 
 Multi-machine aggregation is optional: point `fleet.sshHost` at another box, and the host
 pulls that machine's usage records over SSH (the remote side only needs Node + SSH, no

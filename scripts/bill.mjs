@@ -25,7 +25,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 /** Parse `--flag value` / `--flag` arguments. */
 function parseArgs(argv) {
-  const args = { host: null, label: null, write: false, json: false, local: true, keepDays: 400, home: null, prices: null, push: null, pushPath: null };
+  const args = { host: null, label: null, write: false, json: false, local: true, keepDays: 400, home: null, prices: null, push: null, pushPath: null, tariff: null, holidays: null };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--host') args.host = argv[++index] ?? null;
@@ -34,12 +34,14 @@ function parseArgs(argv) {
     else if (arg === '--prices') args.prices = argv[++index] ?? null;
     else if (arg === '--keep-days') args.keepDays = Number(argv[++index]);
     else if (arg === '--push') args.push = argv[++index] ?? null;
+    else if (arg === '--tariff') args.tariff = argv[++index] ?? null;
+    else if (arg === '--holidays') args.holidays = argv[++index] ?? null;
     else if (arg === '--push-path') args.pushPath = argv[++index] ?? null;
     else if (arg === '--write') args.write = true;
     else if (arg === '--json') args.json = true;
     else if (arg === '--no-local') args.local = false;
     else if (arg === '--help' || arg === '-h') {
-      process.stdout.write('usage: bill.mjs [--host <ssh-host>] [--label <name>] [--home <dsh-home>] [--prices <config.json>] [--keep-days <n>] [--write] [--json] [--no-local] [--push <ssh-host>] [--push-path <remote-file>]\n');
+      process.stdout.write('usage: bill.mjs [--host <ssh-host>] [--label <name>] [--home <dsh-home>] [--prices <config.json>] [--keep-days <n>] [--write] [--json] [--no-local] [--push <ssh-host>] [--push-path <remote-file>] [--tariff peak|time] [--holidays YYYY-MM-DD,...]\n');
       process.exit(0);
     } else {
       process.stderr.write(`bill: unknown argument ${arg}\n`);
@@ -199,6 +201,8 @@ function table(fleet) {
 
 const args = parseArgs(process.argv.slice(2));
 const config = loadConfig(args.prices);
+if (args.tariff !== null) config.tariff = args.tariff === 'time' ? 'time' : 'peak';
+if (args.holidays !== null) config.holidays = args.holidays.split(',').map((day) => day.trim()).filter(Boolean);
 const now = Date.now();
 const home = args.home ?? process.env.DSH_HOME ?? join(homedir(), '.dsh');
 
