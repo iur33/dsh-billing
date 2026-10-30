@@ -62,6 +62,8 @@ EOF
 
 官方谷时价是峰时价的一半，而多数使用时间落在谷时，因此默认按峰谷计价；`peak` 模式适合希望成本上界稳定、不必维护时段与节假日的人。
 
+如果你的 API 并非官方端点（第三方代理、自建网关、Coding Plan 之类），峰谷时段通常并不适用，建议直接设为 `tariff: peak`。
+
 ```yaml
 config:
   tariff: time                           # time | peak
