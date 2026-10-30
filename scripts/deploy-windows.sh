@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copy dsh-peak-billing to another machine over SSH and add its loader row.
+# Copy dsh-billing to another machine over SSH and add its loader row.
 #
 #   ./scripts/deploy-windows.sh <ssh-host> [profile] [remote-home]
 #   ./scripts/deploy-windows.sh my-server desktop

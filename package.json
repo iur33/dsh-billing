@@ -1,7 +1,7 @@
 {
-  "name": "dsh-peak-billing",
-  "version": "0.2.0",
-  "description": "DSH billing plugin: live session cost at DeepSeek's official peak rates, with optional cross-machine aggregation over SSH. · DSH 峰时价计费插件：会话实时费用，可选 SSH 多机汇总。",
+  "name": "dsh-billing",
+  "version": "0.3.0",
+  "description": "DSH billing plugin: live session cost at DeepSeek peak/off-peak rates, with optional cross-machine aggregation over SSH. · DSH 计费插件：会话实时费用，默认峰谷计价，可选 SSH 多机汇总。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -32,7 +32,8 @@
     "billing",
     "cost",
     "peak",
-    "usage"
+    "usage",
+    "peak-offpeak"
   ],
   "dsh": {
     "client": {

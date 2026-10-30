@@ -163,7 +163,7 @@ function find(tree, predicate) {
 }
 
 const definition = sandbox.definition;
-assert.equal(definition.id, 'dsh-peak-billing');
+assert.equal(definition.id, 'dsh-billing');
 
 const exports = definition.factory((specifier) => {
   if (specifier === 'react') return React;
@@ -183,10 +183,10 @@ exports.apply({
     register: (options, component) => { registered = { options, component }; return () => {}; },
   },
 });
-assert.equal(dictionaries.ns, 'dsh-peak-billing');
+assert.equal(dictionaries.ns, 'dsh-billing');
 assert.equal(styles.length, 1);
 assert.equal(registered.options.name, 'conversation.composer.dock');
-assert.equal(registered.options.locale, 'dsh-peak-billing');
+assert.equal(registered.options.locale, 'dsh-billing');
 assert.equal(Object.keys(dictionaries.dicts.zh).length, Object.keys(dictionaries.dicts.en).length);
 
 const t = (key, params) => {
@@ -228,7 +228,7 @@ assert.ok(text(mounted.tree).includes('¥4.55'), 'pill shows the formatted total
 
 pill.props.onClick();
 const open = mounted.update();
-const panel = find(open, (node) => node.props?.['data-peak-billing-panel'] === true);
+const panel = find(open, (node) => node.props?.['data-billing-panel'] === true);
 assert.ok(panel !== null, 'click opens the dialog');
 const panelText = text(panel);
 assert.ok(panelText.includes('¥4.55'), 'dialog repeats the total');
@@ -270,7 +270,7 @@ const timeView = {
 };
 const timeMount = mount(registered.component, { useProjection: () => timeView, t });
 find(timeMount.tree, (node) => node.type === 'button').props.onClick();
-const timePanel = text(find(timeMount.update(), (node) => node.props?.['data-peak-billing-panel'] === true));
+const timePanel = text(find(timeMount.update(), (node) => node.props?.['data-billing-panel'] === true));
 assert.ok(timePanel.includes('峰谷价'), 'time mode labels the badge');
 assert.ok(timePanel.includes('峰时 tokens') && timePanel.includes('谷时 tokens'), 'time mode splits tokens');
 assert.ok(!timePanel.includes('若按谷时价'), 'time mode drops the hypothetical row');
@@ -280,7 +280,7 @@ const unpricedMount = mount(registered.component, {
   t,
 });
 find(unpricedMount.tree, (node) => node.type === 'button').props.onClick();
-const unpricedPanel = find(unpricedMount.update(), (node) => node.props?.['data-peak-billing-panel'] === true);
+const unpricedPanel = find(unpricedMount.update(), (node) => node.props?.['data-billing-panel'] === true);
 assert.ok(text(unpricedPanel).includes('未匹配价格'), 'unpriced models say so');
 
 console.log('ok — client bundle, locale, slot, periods, pill and dialog render passed');

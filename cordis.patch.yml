@@ -1,6 +1,6 @@
-# dsh bundle patch: inserts the peak-billing plugin into a profile's layer stack.
+# dsh bundle patch: inserts the billing plugin into a profile's layer stack.
 # Installed profiles usually carry this row in their own cordis.patch.yml
 # (scripts/install.sh does that); this file documents the row shape.
 - insert:
-    - id: peak-billing
-      name: 'dsh-peak-billing'
+    - id: billing
+      name: 'dsh-billing'

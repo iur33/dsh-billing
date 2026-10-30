@@ -10,8 +10,8 @@ import { zstdCompressSync } from 'node:zlib';
 import { aggregateUsage, collectUsage, dayKey, readSessionText } from '../lib/ledger.js';
 import { resolveConfig } from '../lib/pricing.js';
 
-const config = resolveConfig();
-const home = mkdtempSync(join(tmpdir(), 'peak-billing-ledger-'));
+const config = resolveConfig({ tariff: 'peak' });
+const home = mkdtempSync(join(tmpdir(), 'billing-ledger-'));
 
 /** One durable event line. */
 function line(type, seq, time, data) {

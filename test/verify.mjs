@@ -1,5 +1,5 @@
 /**
- * Offline checks for the peak-billing fold. Run with:
+ * Offline checks for the billing fold. Run with:
  *   node test/verify.mjs
  *
  * No harness, no network: the projection is a pure fold, so this is the whole
@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { createProjection } from '../lib/projection.js';
 import { costOf, resolveConfig, resolveTier } from '../lib/pricing.js';
 
-const config = resolveConfig();
+const config = resolveConfig({ tariff: 'peak' });
 const projection = createProjection(config);
 
 /** Build the durable event envelope the projection registry hands to `apply`. */
@@ -29,7 +29,9 @@ function message(seq, turn, model, usage, provider = 'example') {
 
 const turnStart = (turn) => ({ type: 'turn/start', seq: 1, time: 1, data: { turn } });
 
-// --- official peak rates -----------------------------------------------------
+// --- defaults and official peak rates ----------------------------------------
+assert.equal(resolveConfig().tariff, 'time', 'off-peak-aware billing is the default');
+assert.equal(resolveConfig({ tariff: 'peak' }).tariff, 'peak');
 assert.equal(resolveTier('DeepSeek-V4.1-Flash-1017', config).tier, 'flash');
 assert.equal(resolveTier('DeepSeek-V4-Pro-0813', config).tier, 'pro');
 assert.equal(resolveTier('deepseek-flash', config).tier, 'flash');
@@ -156,4 +158,4 @@ const peakProjection = createProjection(config);
 const peakState = peakProjection.apply(peakProjection.init({}, 0), at('2026-10-30T22:00:00+08:00', 't6'));
 assert.equal(peakProjection.wire.view(peakState).peakSpend.toFixed(2), '2.00');
 
-console.log('ok — peak-billing fold, pricing, checkpoint, tariff and override checks passed');
+console.log('ok — billing fold, pricing, checkpoint, tariff and override checks passed');

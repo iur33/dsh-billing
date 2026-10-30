@@ -11,7 +11,7 @@
  * table the plugin uses. Nothing needs to be installed on the other machine
  * beyond Node and an SSH account.
  *
- * @module dsh-peak-billing/scripts/bill
+ * @module dsh-billing/scripts/bill
  */
 import { spawn } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -187,7 +187,8 @@ function pushFile(host, target, file) {
 function table(fleet) {
   const symbol = fleet.symbol;
   const money = (value) => `${symbol}${value.toFixed(value < 1 ? 4 : 2)}`;
-  const lines = [`峰时价账单 · ${new Date(fleet.generatedAt).toLocaleString()}`, ''];
+  const mode = config.tariff === 'time' ? '峰谷价' : '峰时价';
+  const lines = [`${mode}账单 · ${new Date(fleet.generatedAt).toLocaleString()}`, ''];
   const width = Math.max(...fleet.machines.map((machine) => machine.label.length), 2);
   for (const machine of fleet.machines) {
     const pad = machine.label.padEnd(width);
@@ -230,7 +231,7 @@ const fleet = fleetDoc(machines, config, now);
 
 let written = null;
 if (args.write) {
-  written = join(home, 'peak-billing', 'fleet.json');
+  written = join(home, 'billing', 'fleet.json');
   mkdirSync(dirname(written), { recursive: true });
   writeFileSync(written, JSON.stringify(fleet, null, 2));
   if (!args.json) process.stderr.write(`wrote ${written}\n`);
@@ -242,7 +243,7 @@ if (args.push !== null && written !== null) {
     if (target === null) {
       const remote = await remoteHome(args.push);
       if (remote === null) throw new Error('could not resolve the remote home; pass --push-path');
-      target = `${remote.replace(/\\/g, '/')}/.dsh/peak-billing/fleet.json`;
+      target = `${remote.replace(/\\/g, '/')}/.dsh/billing/fleet.json`;
     }
     await pushFile(args.push, target, written);
     if (!args.json) process.stderr.write(`pushed to ${args.push}:${target}\n`);

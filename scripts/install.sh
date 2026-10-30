@@ -1,5 +1,5 @@
 #!/bin/sh
-# Link dsh-peak-billing into a DSH profile and add its loader row.
+# Link dsh-billing into a DSH profile and add its loader row.
 # Idempotent: safe to re-run after an app update or a plugin edit.
 #
 #   ./scripts/install.sh
@@ -21,9 +21,9 @@ if [ ! -d "$PROFILE_DIR" ]; then
 fi
 
 mkdir -p "$PROFILE_DIR/node_modules"
-ln -sfn "$PLUGIN_DIR" "$PROFILE_DIR/node_modules/dsh-peak-billing"
+ln -sfn "$PLUGIN_DIR" "$PROFILE_DIR/node_modules/dsh-billing"
 
-if grep -q "^[[:space:]]*- id: 'peak-billing'\|^[[:space:]]*- id: peak-billing" "$PATCH" 2>/dev/null; then
+if grep -q "^[[:space:]]*- id: 'billing'\|^[[:space:]]*- id: billing" "$PATCH" 2>/dev/null; then
   echo "patch row already present in $PATCH (left untouched)"
 else
   cp "$PATCH" "$PATCH.bak-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
@@ -33,14 +33,14 @@ else
     mv "$PATCH.tmp" "$PATCH"
   fi
   {
-    printf '\n- insert:\n    - id: peak-billing\n      name: '"'"'dsh-peak-billing'"'"'\n'
+    printf '\n- insert:\n    - id: billing\n      name: '"'"'dsh-billing'"'"'\n'
     if [ -n "$SSH_HOST" ]; then
       printf '      config:\n        fleet:\n          sshHost: %s\n' "$SSH_HOST"
       [ "$SSH_LABEL" = "$SSH_HOST" ] || printf '          label: %s\n' "$SSH_LABEL"
     fi
   } >> "$PATCH"
-  echo "added peak-billing row to $PATCH"
+  echo "added billing row to $PATCH"
 fi
 
-echo "linked $PLUGIN_DIR -> $PROFILE_DIR/node_modules/dsh-peak-billing"
+echo "linked $PLUGIN_DIR -> $PROFILE_DIR/node_modules/dsh-billing"
 echo "restart the app (or 'dsh --profile $PROFILE') to load it"
