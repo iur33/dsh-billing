@@ -47,10 +47,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/iur33/dsh-peak-billing.git"
+    "url": "git+https://github.com/iur33/dsh-billing.git"
   },
-  "homepage": "https://github.com/iur33/dsh-peak-billing#readme",
+  "homepage": "https://github.com/iur33/dsh-billing#readme",
   "bugs": {
-    "url": "https://github.com/iur33/dsh-peak-billing/issues"
+    "url": "https://github.com/iur33/dsh-billing/issues"
   }
 }

@@ -67,7 +67,7 @@ config:
 前置：DSH 0.2.x（桌面端或 `dsh web` 都可以），Node 22.15+（宿主自带运行时即可，插件本身零依赖）。
 
 ```sh
-git clone https://github.com/iur33/dsh-peak-billing.git
+git clone https://github.com/iur33/dsh-billing.git
 cd dsh-peak-billing
 ./scripts/install.sh                 # 默认 desktop profile
 # DSH_PROFILE=web ./scripts/install.sh   # 或装进 web profile
