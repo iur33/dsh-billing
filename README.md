@@ -1,4 +1,4 @@
-# dsh-peak-billing
+# dsh-billing
 
 > DeepSeek Harness 的计费插件：输入框下方实时显示本会话花了多少钱，默认**全部按 DeepSeek 官网峰时价**折算，也可以切成**峰谷计费**；可选通过 SSH 把多台机器的用量汇总到一起。
 
